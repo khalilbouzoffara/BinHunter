@@ -12,6 +12,7 @@ class Config:
     # Necessary folders
     UPLOAD_FOLDER = './src/static/uploads'
     EXTRACT_FOLDER = './src/static/extractions'
+    LOG_EXTRACT_FOLDER = './src/static/logs'
 
     # Binwalk path
     BINWALK_PATH = '/usr/local/bin/binwalk'

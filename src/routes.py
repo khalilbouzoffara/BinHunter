@@ -2,30 +2,16 @@ from flask import Blueprint, request, jsonify, current_app
 import os
 import subprocess
 from werkzeug.utils import secure_filename
-import magic
-import hashlib
+from datetime import datetime
+from .services.parse_binwalk_out import parse_bin_output
+from .services.upload_checks import validate_mime_type, sha256_file
+import json
 
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/upload', methods=['POST'])
 def upload():
     """Handle the firmware file upload securely."""
-
-    def validate_mime_type(file):
-        """Check if the file's MIME type is allowed."""
-        mime = magic.Magic(mime=True)
-        mime_type = mime.from_buffer(file.read(1024))  # Read first 1024 bytes for detection
-        file.seek(0)  # Reset file pointer after reading for MIME check
-        return mime_type in current_app.config['ALLOWED_MIME_TYPES']
-    
-    def sha256_file(file):
-        """Generate SHA-256 hash of a file's contents."""
-        hasher = hashlib.sha256()
-        file.seek(0)  # Ensure the file pointer is at the start
-        while chunk := file.read(8192):  # Read the file in chunks
-            hasher.update(chunk)
-        file.seek(0)  # Reset the file pointer after hashing
-        return hasher.hexdigest()
     
     if 'file' not in request.files:
         return jsonify({"error": "No file provided"}), 400
@@ -34,11 +20,11 @@ def upload():
 
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
-    
+
     # Validate the MIME type of the file
-    if not validate_mime_type(file):
+    if not validate_mime_type(file) in current_app.config['ALLOWED_MIME_TYPES']:
         return jsonify({"error": "Invalid file type"}), 400
-    
+
     # Sanitize the filename
     filename = secure_filename(file.filename)
 
@@ -48,7 +34,7 @@ def upload():
     
     # Check if the file already exists based on its hash
     if os.path.exists(file_path):
-        return jsonify({"message": "File already exists", "filename": file_hash}), 200
+        return jsonify({"message": "File already exists", "filename": file_hash}), 400
     
     # Save the file
     file.save(file_path)
@@ -102,8 +88,22 @@ def extract():
     # Run the binwalk extract
     try:
         result = subprocess.run([current_app.config['BINWALK_PATH'], "-Me", file_path, "--directory", output_dir], capture_output=True, text=True)
-        return jsonify({"output": result.stdout, "extracted_files_location": output_dir})
-        return 
+        
+        parsed_data = parse_bin_output(result.stdout)
+
+        #Generate log filename based on the original filename and timestamp
+        log_filename = f"{filename}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        log_file_path = os.path.join(current_app.config['LOG_EXTRACT_FOLDER'], log_filename)
+
+        # Save extraction result to json log file
+
+        with open(log_file_path, 'w') as f:
+            json.dump(parsed_data, f, indent=4)
+
+        
+        return jsonify({"message": "Firmware Extracted Successfully ", 
+                        "Extraction data": parsed_data}), 200
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

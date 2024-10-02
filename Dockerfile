@@ -97,10 +97,10 @@ RUN mkdir srec \
 COPY . .
 
 # Create necessary directories with correct permissions
-RUN mkdir -p ./src/static/uploads ./src/static/extractions && \
-    chmod -R 777 ./src/static/uploads ./src/static/extractions
+RUN mkdir -p ./src/static/uploads ./src/static/extractions ./src/static/logs && \
+    chmod -R 777 ./src/static/uploads ./src/static/extractions ./src/static/logs
 
-RUN chown -R appuser:appuser /app/src/static/uploads /app/src/static/extractions
+RUN chown -R appuser:appuser /app/src/static/uploads /app/src/static/extractions /app/src/static/logs
 
 
 # Switch to the non-privileged user to run the application
