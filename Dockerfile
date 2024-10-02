@@ -61,7 +61,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Install additional dependencies
-RUN pip install uefi_firmware jefferson ubi-reader
+RUN pip install uefi_firmware jefferson ubi-reader python-magic
 
 # Install Sasquatch
 RUN curl -L -o sasquatch_1.0.deb "https://github.com/onekey-sec/sasquatch/releases/download/sasquatch-v4.5.1-4/sasquatch_1.0_amd64.deb" \
@@ -98,18 +98,24 @@ COPY . .
 
 # Create necessary directories with correct permissions
 RUN mkdir -p ./src/static/uploads ./src/static/extractions && \
-    chmod 777 ./src/static/uploads ./src/static/extractions
+    chmod -R 777 ./src/static/uploads ./src/static/extractions
+
+RUN chown -R appuser:appuser /app/src/static/uploads /app/src/static/extractions
+
 
 # Switch to the non-privileged user to run the application
 USER appuser
 
 #Flask ENV variables
 ENV FLASK_APP=app.py
-#ENV FLASK_RUN_HOST=0.0.0.0
+
+# Enable Flask auto-reloading
+ENV FLASK_ENV=development   
+ENV FLASK_RUN_HOST=0.0.0.0
 
 # Expose the port that the application listens on
 EXPOSE 5000
 
 # Run the application using uvicorn
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+CMD [ "python3", "-m" , "flask", "run"]
   

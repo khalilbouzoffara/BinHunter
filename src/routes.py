@@ -1,17 +1,76 @@
 from flask import Blueprint, request, jsonify, current_app
 import os
 import subprocess
+from werkzeug.utils import secure_filename
+import magic
+import hashlib
 
 main_bp = Blueprint('main', __name__)
 
-@main_bp.route('/scan', methods=['POST'])
-def scan():
+@main_bp.route('/upload', methods=['POST'])
+def upload():
+    """Handle the firmware file upload securely."""
+
+    def validate_mime_type(file):
+        """Check if the file's MIME type is allowed."""
+        mime = magic.Magic(mime=True)
+        mime_type = mime.from_buffer(file.read(1024))  # Read first 1024 bytes for detection
+        file.seek(0)  # Reset file pointer after reading for MIME check
+        return mime_type in current_app.config['ALLOWED_MIME_TYPES']
+    
+    def sha256_file(file):
+        """Generate SHA-256 hash of a file's contents."""
+        hasher = hashlib.sha256()
+        file.seek(0)  # Ensure the file pointer is at the start
+        while chunk := file.read(8192):  # Read the file in chunks
+            hasher.update(chunk)
+        file.seek(0)  # Reset the file pointer after hashing
+        return hasher.hexdigest()
+    
     if 'file' not in request.files:
         return jsonify({"error": "No file provided"}), 400
-
+    
     file = request.files['file']
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
+
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    
+    # Validate the MIME type of the file
+    if not validate_mime_type(file):
+        return jsonify({"error": "Invalid file type"}), 400
+    
+    # Sanitize the filename
+    filename = secure_filename(file.filename)
+
+    # Generate the SHA-256 hash of the file
+    file_hash = sha256_file(file)
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file_hash)
+    
+    # Check if the file already exists based on its hash
+    if os.path.exists(file_path):
+        return jsonify({"message": "File already exists", "filename": file_hash}), 200
+    
+    # Save the file
     file.save(file_path)
+
+    return jsonify({"message": "Firmware uploaded successfully", 
+                    "filename": filename, 
+                    'hash': file_hash}), 200
+
+
+@main_bp.route('/scan', methods=['POST'])
+def scan():
+    """Perform scan on the uploaded firmware file."""
+
+    filename = request.json.get('filename')
+
+    if not filename:
+        return jsonify({"error": "Filename not provided"}), 400
+    
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
 
     # Run the binwalk scan
     try:
@@ -24,12 +83,17 @@ def scan():
 
 @main_bp.route('/extract', methods=['POST'])
 def extract():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
+    """Perform extraction on the uploaded firmware file."""
 
-    file = request.files['file']
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(file_path)
+    filename = request.json.get('filename')
+
+    if not filename:
+        return jsonify({"error": "Filename not provided"}), 400
+    
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
 
     # Use the specified output directory if provided, otherwise default
     output_dir = request.form.get('output_dir', current_app.config['EXTRACT_FOLDER'])
@@ -45,19 +109,36 @@ def extract():
 
 @main_bp.route('/entropy', methods=['POST'])
 def entropy():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
+    """Generate entropy for the uploaded firmware file."""
 
-    file = request.files['file']
-    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(file_path)
+    filename = request.json.get('filename')
+
+    if not filename:
+        return jsonify({"error": "Filename not provided"}), 400
+    
+    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
 
     # Generate entropy graph
     try:
-        result = subprocess.run([current_app.config['BINWALK_PATH'], "-E", file_path], capture_output=True, text=True)
-        entropy_image = file.filename.replace(".bin", ".png")
-        return jsonify({"output": result.stdout, "entropy_image": entropy_image})
+        # Define the output file path for entropy data
+        entropy_output_file = os.path.join(current_app.config['UPLOAD_FOLDER'], 'entropy.png')
+
+        result = subprocess.run([current_app.config['BINWALK_PATH'], '-E', '-o', entropy_output_file, file_path], capture_output=True, text=True)
+        # Check for errors in Binwalk command execution
+        if result.returncode != 0:
+            return jsonify({"error": result.stderr}), 500
+        
+        return jsonify({
+            "file": file_path,
+            "message": "Entropy analysis complete",
+            "entropy_image": entropy_output_file  # Path to entropy output file (image)
+        }), 200
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+
+
