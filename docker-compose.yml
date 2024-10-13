@@ -1,0 +1,28 @@
+services:
+
+  frontend:
+    build:
+      context: ./front-end
+    ports:
+      - "8080:8080"  # React dev server
+    volumes:
+      - ./front-end:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    command: npm run dev
+
+  flask-app:
+    build: ./back-end
+    ports:
+      - "5000:5000"  # Expose port 5000
+    volumes:
+      - ./backend:/app
+    environment:
+      FLASK_APP: app.py
+      FLASK_ENV: development  # Enable Flask's auto-reloading
+    command: python3 -m flask run --debug
+
+  networks:
+    default:
+      driver: bridge
