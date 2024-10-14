@@ -61,7 +61,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Install additional dependencies
-RUN pip install uefi_firmware jefferson ubi-reader python-magic
+RUN pip install uefi_firmware jefferson ubi-reader python-magic flask-cors
 
 # Install Sasquatch
 RUN curl -L -o sasquatch_1.0.deb "https://github.com/onekey-sec/sasquatch/releases/download/sasquatch-v4.5.1-4/sasquatch_1.0_amd64.deb" \
@@ -97,14 +97,14 @@ RUN mkdir srec \
 COPY . .
 
 # Create necessary directories with correct permissions
-RUN mkdir -p ./src/static/uploads ./src/static/extractions ./src/static/logs && \
-    chmod -R 777 ./src/static/uploads ./src/static/extractions ./src/static/logs
+#RUN mkdir -p ./src/static/uploads ./src/static/extractions ./src/static/logs && \
+    #chmod -R 777 ./src/static/uploads ./src/static/extractions ./src/static/logs
 
-RUN chown -R appuser:appuser /app/src/static/uploads /app/src/static/extractions /app/src/static/logs
+#RUN chown -R appuser:appuser /app/src/static/uploads /app/src/static/extractions /app/src/static/logs
 
 
 # Switch to the non-privileged user to run the application
-USER appuser
+#USER appuser
 
 #Flask ENV variables
 ENV FLASK_APP=app.py

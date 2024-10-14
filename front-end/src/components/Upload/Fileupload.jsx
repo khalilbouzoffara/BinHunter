@@ -1,5 +1,7 @@
 import React, { useState, useRef } from "react";
 import { LinearProgress } from "@mui/material";
+import { uploadFile } from "/src/api/uploadService.js";
+import axios from 'axios';
 
 const Fileupload = () => {
   const [selectedFile, setSelectedFile] = useState(null); // Stores the selected file
@@ -23,24 +25,37 @@ const Fileupload = () => {
   };
 
   // Simulate file upload
-  const handleUpload = () => {
-    if (!selectedFile) {
+  const handleUpload = async () => {
+    const fileUp = fileInputRef.current.files[0];
+
+    if (!fileUp) {
       alert("Please select a file to upload.");
       return;
     }
     setIsUploading(true); // Start upload
     setUploadProgress(0); // Reset progress
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval); // Stop when progress reaches 100%
-          setIsUploading(false); // End upload
-          return 100;
-        }
-        return prev + 10; // Increment progress
+    const formData = new FormData();
+    formData.append('file', fileUp);
+
+    try {
+      const response = await axios.post('http://localhost:5000/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(progress);
+        },
       });
-    }, 500); // Update every 500ms
+
+      setIsUploading(false); // End upload
+      
+      } catch (error) {
+        console.error("Upload failed:", error);
+        throw error;
+      }
+
   };
 
   const handleCancel = () => {
@@ -50,15 +65,15 @@ const Fileupload = () => {
   };
 
   return (
-    <div class="layout-content-container flex flex-col w-[512px] max-w-[512px] py-5 max-w-[960px] flex-1">
-      <h2 class="text-white tracking-light text-[28px] font-bold leading-tight px-4 text-left pb-3 pt-5">
+    <div className="layout-content-container flex flex-col w-[512px] max-w-[512px] py-5 max-w-[960px] flex-1">
+      <h2 className="text-white tracking-light text-[28px] font-bold leading-tight px-4 text-left pb-3 pt-5">
         New Scan
       </h2>
-      <p class="text-white text-base font-normal leading-normal pb-3 pt-1 px-4">
+      <p className="text-white text-base font-normal leading-normal pb-3 pt-1 px-4">
         Upload a binary to scan for vulnerabilities
       </p>
-      <div class="flex flex-col p-4">
-        <div class="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-[#354f64] px-6 py-14">
+      <div className="flex flex-col p-4">
+        <div className="flex flex-col items-center gap-6 rounded-xl border-2 border-dashed border-[#354f64] px-6 py-14">
           <input
             type="file"
             ref={fileInputRef}
@@ -71,7 +86,7 @@ const Fileupload = () => {
               ? selectedFile.name
               : "Drag and drop or select a file"}
           </p>
-          <p class="text-[#94b0c7] text-sm font-normal leading-normal pb-3 pt-1 px-4">
+          <p className="text-[#94b0c7] text-sm font-normal leading-normal pb-3 pt-1 px-4">
           Maximum size : 100MB
             
           </p>
@@ -83,7 +98,7 @@ const Fileupload = () => {
           </button>
         </div>
       </div>
-      <p class="text-[#94b0c7] text-sm font-normal leading-normal pb-3 pt-1 px-4">
+      <p className="text-[#94b0c7] text-sm font-normal leading-normal pb-3 pt-1 px-4">
         Supported file types: .zip, .tar.gz, .tar.bz2, .tar.xz, .tgz
       </p>
 
@@ -109,13 +124,13 @@ const Fileupload = () => {
         </div>
       )}
 
-      <div class="flex max-w-[960px] flex-1 flex-col">
-        <div class="flex px-4 py-3 justify-end">
-          <div class="pr-4">
+      <div className="flex max-w-[960px] flex-1 flex-col">
+        <div className="flex px-4 py-3 justify-end">
+          <div className="pr-4">
             <button
               onClick={handleUpload}
               disabled={!selectedFile || isUploading}
-              class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#197bcc] text-white text-sm font-bold leading-normal tracking-[0.015em]"
+              className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#197bcc] text-white text-sm font-bold leading-normal tracking-[0.015em]"
             >
               <span className="truncate">
                 {isUploading ? "Uploading..." : "Upload"}
@@ -124,9 +139,9 @@ const Fileupload = () => {
           </div>
           <button
             onClick={handleCancel}
-            class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#253746] text-white text-sm font-bold leading-normal tracking-[0.015em]"
+            className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#253746] text-white text-sm font-bold leading-normal tracking-[0.015em]"
           >
-            <span class="truncate">Cancel</span>
+            <span className="truncate">Cancel</span>
           </button>
         </div>
       </div>

@@ -9,20 +9,24 @@ services:
       - ./front-end:/app
       - /app/node_modules
     depends_on:
-      - backend
+      - flask-app
     command: npm run dev
+    networks:
+      - my-network
 
   flask-app:
     build: ./back-end
     ports:
       - "5000:5000"  # Expose port 5000
     volumes:
-      - ./backend:/app
+      - ./back-end:/app
     environment:
       FLASK_APP: app.py
       FLASK_ENV: development  # Enable Flask's auto-reloading
     command: python3 -m flask run --debug
+    networks:
+      - my-network
 
-  networks:
-    default:
-      driver: bridge
+networks:
+  my-network:
+    driver: bridge
