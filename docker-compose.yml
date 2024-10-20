@@ -10,23 +10,41 @@ services:
       - /app/node_modules
     depends_on:
       - flask-app
-    command: npm run dev
     networks:
       - my-network
 
   flask-app:
     build: ./back-end
     ports:
-      - "5000:5000"  # Expose port 5000
+      - "5000:5000"
     volumes:
       - ./back-end:/app
     environment:
       FLASK_APP: app.py
-      FLASK_ENV: development  # Enable Flask's auto-reloading
-    command: python3 -m flask run --debug
+      FLASK_ENV: development  # Enable Flask's auto-reloading  
+    depends_on:
+      - db  
     networks:
       - my-network
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: binhunter
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist database data
+    networks:
+      - my-network
+
 
 networks:
   my-network:
     driver: bridge
+
+volumes:
+  postgres_data:
+
+# command: python3 -m flask run --debug
+# command: npm run dev

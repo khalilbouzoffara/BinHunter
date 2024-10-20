@@ -61,7 +61,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Install additional dependencies
-RUN pip install uefi_firmware jefferson ubi-reader python-magic flask-cors
+RUN pip install uefi_firmware jefferson ubi-reader python-magic flask-cors python-dotenv
 
 # Install Sasquatch
 RUN curl -L -o sasquatch_1.0.deb "https://github.com/onekey-sec/sasquatch/releases/download/sasquatch-v4.5.1-4/sasquatch_1.0_amd64.deb" \
@@ -116,6 +116,11 @@ ENV FLASK_RUN_HOST=0.0.0.0
 # Expose the port that the application listens on
 EXPOSE 5000
 
-# Run the application using uvicorn
+RUN chmod +x /app/entrypoint.sh
+
+# Set the entrypoint for the container
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# Default command to start the Flask app
 CMD [ "python3", "-m" , "flask", "run"]
   

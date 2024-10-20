@@ -1,8 +1,14 @@
 import os
 
+from dotenv import load_dotenv
+
+
+load_dotenv() # Load environment variables
+
+
 class Config:
     # General Flask configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'mysecret')
+    SECRET_KEY = os.getenv('SECRET_KEY')
     DEBUG = False
     TESTING = False
 
@@ -29,6 +35,10 @@ class Config:
         'application/x-tar',            # Tape Archive
         'application/x-7z-compressed'   # 7-zip archive
 ]
+
+    # Postgres Database
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 class DevelopmentConfig(Config):
     DEBUG = True

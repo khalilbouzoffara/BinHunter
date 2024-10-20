@@ -1,12 +1,13 @@
 import React, { useState, useRef } from "react";
 import { LinearProgress } from "@mui/material";
-import { uploadFile } from "/src/api/uploadService.js";
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const Fileupload = () => {
   const [selectedFile, setSelectedFile] = useState(null); // Stores the selected file
   const [uploadProgress, setUploadProgress] = useState(0); // Upload progress
   const [isUploading, setIsUploading] = useState(false); // Upload state
+  const navigate = useNavigate();  // React Router hook for navigation
 
   const fileInputRef = useRef(null); // Ref to access the hidden input
 
@@ -49,7 +50,11 @@ const Fileupload = () => {
         },
       });
 
-      setIsUploading(false); // End upload
+      if (response.status === 200) {
+        setIsUploading(false); // End upload
+        navigate("/products");
+      }
+
       
       } catch (error) {
         console.error("Upload failed:", error);

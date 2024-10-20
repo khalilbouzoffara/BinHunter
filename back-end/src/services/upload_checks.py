@@ -1,5 +1,7 @@
 import magic
 import hashlib
+import os
+import subprocess
 
 def validate_mime_type(file):
     """Check if the file's MIME type is allowed."""
@@ -16,3 +18,11 @@ def sha256_file(file):
         hasher.update(chunk)
     file.seek(0)  # Reset the file pointer after hashing
     return hasher.hexdigest()
+
+def get_size(path):
+    if os.path.exists(path):
+        size = subprocess.check_output(["du", "-bs", path]).decode("utf-8")
+        size_bytes = int(size.split("\t")[0])
+    else:
+        size_bytes = 0
+    return size_bytes / (1024 * 1024)
