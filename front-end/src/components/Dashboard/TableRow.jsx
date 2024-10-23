@@ -1,13 +1,13 @@
 import React from "react";
 
-const TableRow = ({ data }) => (
+const TableRow = ({ data, columns }) => (
   <tr>
-    {data.map((item, index) => (
+    {columns.map((item, index) => (
       <td
         key={index}
         className="px-4 py-3 text-white text-sm font-light leading-normal"
       >
-        {item}
+        {item.id === 'hash' ? data[item.id]?.slice(0, 10) : data[item.id] ?? 'N/A'}
       </td>
     ))}
   </tr>

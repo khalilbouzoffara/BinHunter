@@ -5,18 +5,20 @@ FROM python:${PYTHON_VERSION}-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-WORKDIR /app
+ENV USERNAME=binhunter-app
+ENV WORKING_DIR=/app
+
+WORKDIR ${WORKING_DIR}
 
 # Create a non-privileged user
-ARG UID=10001
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    appuser
+RUN groupadd ${USERNAME} && \
+    useradd -g ${USERNAME} ${USERNAME}
+
+RUN chown -R ${USERNAME}:${USERNAME} ${WORKING_DIR}
+RUN chmod -R u=rwx,g=rwx ${WORKING_DIR}
+
+USER ${USERNAME}
+ENV PATH "$PATH:/home/${USERNAME}/.local/bin"
 
 # Install system dependencies and Python
 RUN apt-get update && apt-get install -y \
@@ -49,7 +51,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Clone and build Binwalk v3
-RUN git clone -b binwalkv3 https://github.com/ReFirmLabs/binwalk.git \
+RUN git clone https://github.com/ReFirmLabs/binwalk.git \
     && cd binwalk \
     && cargo build --release \
     && cp target/release/binwalk /usr/local/bin/ \

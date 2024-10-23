@@ -4,7 +4,7 @@ import subprocess
 
 entropy_bp = Blueprint('entropy_bp', __name__)
 
-@entropy_bp.route('/entropy', methods=['POST'])
+@entropy_bp.route('/api/entropy', methods=['POST'])
 def entropy():
     """Generate entropy for the uploaded firmware file."""
 

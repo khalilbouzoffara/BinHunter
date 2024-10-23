@@ -5,7 +5,7 @@ import subprocess
 
 scan_bp = Blueprint('scan_bp', __name__)
 
-@scan_bp.route('/scan', methods=['POST'])
+@scan_bp.route('/api/scan', methods=['POST'])
 def scan():
     """Perform scan on the uploaded firmware file."""
 

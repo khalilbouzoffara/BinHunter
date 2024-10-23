@@ -25,4 +25,4 @@ def get_size(path):
         size_bytes = int(size.split("\t")[0])
     else:
         size_bytes = 0
-    return size_bytes / (1024 * 1024)
+    return round(size_bytes / (1024 * 1024), 2)

@@ -1,5 +1,5 @@
 from flask import Flask
-from src.routes.upload import upload_bp
+from src.routes.crud import crud_bp
 from src.routes.scan import scan_bp
 from src.routes.extract import extract_bp
 from src.routes.entropy import entropy_bp
@@ -26,7 +26,7 @@ db.init_app(app)
 migrate.init_app(app, db)
 
 # Register blueprints
-app.register_blueprint(upload_bp)
+app.register_blueprint(crud_bp)
 app.register_blueprint(scan_bp)
 app.register_blueprint(extract_bp)
 app.register_blueprint(entropy_bp)

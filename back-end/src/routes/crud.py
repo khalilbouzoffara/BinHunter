@@ -6,9 +6,9 @@ from ..models.firmware import Firmware
 from ..database import db
 
 
-upload_bp = Blueprint('upload_bp', __name__)
+crud_bp = Blueprint('crud_bp', __name__)
 
-@upload_bp.route('/upload', methods=['POST'])
+@crud_bp.route('/api/upload', methods=['POST'])
 def upload():
     """Handle the firmware file upload securely."""
     
@@ -55,3 +55,10 @@ def upload():
     return jsonify({"message": "Firmware uploaded successfully", 
                     "filename": filename, 
                     'hash': file_hash}), 200
+
+
+@crud_bp.route('/api/firmwares', methods=['GET'])
+def get_firmwares():
+    """Retrieve all firmware entries."""
+    firmwares = Firmware.query.all()
+    return jsonify([fw.to_dict() for fw in firmwares]), 200

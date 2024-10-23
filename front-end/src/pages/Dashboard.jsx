@@ -16,7 +16,6 @@ const Dashboard = () => {
           <Sidebar />
           <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
             <StartScan />
-            <RecentScans />
             <Alerts />
             <Statistics />
           </div>

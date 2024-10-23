@@ -32,7 +32,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: binhunter
+      POSTGRES_DB: binhunter_db
     volumes:
       - postgres_data:/var/lib/postgresql/data  # Persist database data
     networks:
@@ -45,6 +45,3 @@ networks:
 
 volumes:
   postgres_data:
-
-# command: python3 -m flask run --debug
-# command: npm run dev

@@ -7,7 +7,7 @@ import json
 
 extract_bp = Blueprint('extract_bp', __name__)
 
-@extract_bp.route('/extract', methods=['POST'])
+@extract_bp.route('/api/extract', methods=['POST'])
 def extract():
     """Perform extraction on the uploaded firmware file."""
 

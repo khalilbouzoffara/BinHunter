@@ -8,7 +8,7 @@ class Firmware(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     firmware_name = db.Column(db.String(), unique=True, nullable=False)
     #architecture = db.Column(db.String(), nullable=False)
-    size = db.Column(db.String(), nullable=False)
+    size = db.Column(db.Float, nullable=False)
     hash = db.Column(db.String(), unique=True, nullable=False)
     uploaded_at = db.Column(db.DateTime, nullable=False)
 
@@ -19,9 +19,10 @@ class Firmware(db.Model):
 
     def to_dict(self):
         return {
-            'firmware name': self.firmware_name,
+            'firmware_name': self.firmware_name,
             'size': self.size,
-            'hash': self.hash
+            'hash': self.hash,
+            'uploaded_at' : self.uploaded_at
 
         }
 
