@@ -5,98 +5,37 @@ FROM python:${PYTHON_VERSION}-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-ENV USERNAME=binhunter-app
-ENV WORKING_DIR=/app
+#ENV USERNAME=binhunter-app
+WORKDIR /app
 
-WORKDIR ${WORKING_DIR}
 
-# Create a non-privileged user
-RUN groupadd ${USERNAME} && \
-    useradd -g ${USERNAME} ${USERNAME}
-
-RUN chown -R ${USERNAME}:${USERNAME} ${WORKING_DIR}
-RUN chmod -R u=rwx,g=rwx ${WORKING_DIR}
-
-USER ${USERNAME}
-ENV PATH "$PATH:/home/${USERNAME}/.local/bin"
-
-# Install system dependencies and Python
+# Install system dependencies for Binwalk and Flask
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
     curl \
     git \
     build-essential \
     libfontconfig1-dev \
-    p7zip-full \
-    zstd \
-    unzip \
-    tar \
-    sleuthkit \
-    cabextract \
-    lz4 \
-    lzop \
-    device-tree-compiler \
-    unrar-free \
-    clang \
-    liblzo2-dev \
-    libucl-dev \
-    liblz4-dev \
     liblzma-dev \
-    && rm -rf /var/lib/apt/lists/*
+    python3-pip && \
+    apt-get clean
 
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
+# Install Rust and make sure the environment is loaded
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    echo 'source $HOME/.cargo/env' >> /root/.bashrc
 
-# Clone and build Binwalk v3
-RUN git clone https://github.com/ReFirmLabs/binwalk.git \
-    && cd binwalk \
-    && cargo build --release \
-    && cp target/release/binwalk /usr/local/bin/ \
-    && cd .. \
-    && rm -rf binwalk
+# Source Rust environment and clone Binwalk
+RUN /bin/bash -c "source $HOME/.cargo/env && \
+    git clone https://github.com/ReFirmLabs/binwalk /tmp/binwalk && \
+    /tmp/binwalk/dependencies/ubuntu.sh && \
+    cd /tmp/binwalk && cargo build --release && \
+    cp target/release/binwalk /usr/local/bin/binwalk && \
+    rm -rf /tmp/binwalk"
+
+# Copy the Flask application code into the container
+COPY . /app
 
 # Install Python dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
-
-# Install additional dependencies
-RUN pip install uefi_firmware jefferson ubi-reader python-magic flask-cors python-dotenv
-
-# Install Sasquatch
-RUN curl -L -o sasquatch_1.0.deb "https://github.com/onekey-sec/sasquatch/releases/download/sasquatch-v4.5.1-4/sasquatch_1.0_amd64.deb" \
-    && dpkg -i sasquatch_1.0.deb \
-    && rm sasquatch_1.0.deb
-
-# Install dumpifs
-RUN git clone https://github.com/askac/dumpifs.git \
-    && cd dumpifs \
-    && make dumpifs \
-    && cp ./dumpifs /usr/local/bin/dumpifs \
-    && cd .. \
-    && rm -rf dumpifs
-
-# Install lzfse
-RUN git clone https://github.com/lzfse/lzfse.git \
-    && cd lzfse \
-    && make install \
-    && cd .. \
-    && rm -rf lzfse
-
-# Install srec2bin
-RUN mkdir srec \
-    && cd srec \
-    && curl -O http://www.goffart.co.uk/s-record/download/srec_151_src.zip \
-    && unzip srec_151_src.zip \
-    && make \
-    && cp srec2bin /usr/local/bin/ \
-    && cd .. \
-    && rm -rf srec
-
-# Copy the source code into the container
-COPY . .
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Create necessary directories with correct permissions
 #RUN mkdir -p ./src/static/uploads ./src/static/extractions ./src/static/logs && \
