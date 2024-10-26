@@ -13,6 +13,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    libmagic1 \
     build-essential \
     libfontconfig1-dev \
     liblzma-dev \
@@ -37,6 +38,8 @@ COPY . /app
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
+# Install additional dependencies
+RUN pip install uefi_firmware jefferson ubi-reader python-magic flask-cors python-dotenv
 # Create necessary directories with correct permissions
 #RUN mkdir -p ./src/static/uploads ./src/static/extractions ./src/static/logs && \
     #chmod -R 777 ./src/static/uploads ./src/static/extractions ./src/static/logs

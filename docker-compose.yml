@@ -30,7 +30,7 @@ services:
   db:
     image: postgres
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: binuser
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: binhunter_db
     volumes:
