@@ -1,15 +1,19 @@
 ARG PYTHON_VERSION=3.11.4
 FROM python:${PYTHON_VERSION}-slim AS base
 
-# Prevents Python from writing pyc files and keeps Python from buffering stdout and stderr
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# ARG variables for customization
+ARG BINWALK_INSTALL_DIR="/tmp/binwalk"
+ARG REPO_URL="https://github.com/ReFirmLabs/binwalk.git"
 
-#ENV USERNAME=binhunter-app
-WORKDIR /app
+# Set environment variables for Python and Rust
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    BINWALK_RM_EXTRACTION_SYMLINK=1
 
+# Set working directory to /tmp during the setup process
+WORKDIR /tmp
 
-# Install system dependencies for Binwalk and Flask
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     git \
@@ -20,17 +24,29 @@ RUN apt-get update && apt-get install -y \
     python3-pip && \
     apt-get clean
 
-# Install Rust and make sure the environment is loaded
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    echo 'source $HOME/.cargo/env' >> /root/.bashrc
+# Clone the repository containing Binwalk
+RUN git clone ${REPO_URL} ${BINWALK_INSTALL_DIR}
 
-# Source Rust environment and clone Binwalk
-RUN /bin/bash -c "source $HOME/.cargo/env && \
-    git clone https://github.com/ReFirmLabs/binwalk /tmp/binwalk && \
-    /tmp/binwalk/dependencies/ubuntu.sh && \
-    cd /tmp/binwalk && cargo build --release && \
-    cp target/release/binwalk /usr/local/bin/binwalk && \
-    rm -rf /tmp/binwalk"
+# Copy over the Binwalk build directory
+RUN mkdir -p ${BINWALK_INSTALL_DIR}
+COPY . ${BINWALK_INSTALL_DIR}
+
+# Allow pip to install packages system-wide
+RUN mkdir -p $HOME/.config/pip && echo "[global]" > $HOME/.config/pip/pip.conf && echo "break-system-packages = true" >> $HOME/.config/pip/pip.conf
+
+# Install Binwalk dependencies using its Ubuntu script
+RUN ${BINWALK_INSTALL_DIR}/dependencies/ubuntu.sh
+
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+# Build and install Binwalk
+RUN cd ${BINWALK_INSTALL_DIR} && /root/.cargo/bin/cargo build --release && cp ./target/release/binwalk /usr/local/bin/binwalk
+
+# Clean up binwalk build directory
+RUN rm -rf ${BINWALK_INSTALL_DIR}
+
+WORKDIR /app
 
 # Copy the Flask application code into the container
 COPY . /app
@@ -40,15 +56,6 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Install additional dependencies
 RUN pip install uefi_firmware jefferson ubi-reader python-magic flask-cors python-dotenv
-# Create necessary directories with correct permissions
-#RUN mkdir -p ./src/static/uploads ./src/static/extractions ./src/static/logs && \
-    #chmod -R 777 ./src/static/uploads ./src/static/extractions ./src/static/logs
-
-#RUN chown -R appuser:appuser /app/src/static/uploads /app/src/static/extractions /app/src/static/logs
-
-
-# Switch to the non-privileged user to run the application
-#USER appuser
 
 #Flask ENV variables
 ENV FLASK_APP=app.py
@@ -67,4 +74,3 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Default command to start the Flask app
 CMD [ "python3", "-m" , "flask", "run"]
-  
